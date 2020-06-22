@@ -183,7 +183,7 @@ test_git_directory_is_unchanged () {
 	)
 }
 
-test_git_directory_exists() {
+test_git_directory_exists () {
 	test -e ".git/modules/$1" &&
 	if test -f sub1/.git
 	then
@@ -306,11 +306,21 @@ test_submodule_content () {
 # Removing a submodule containing a .git directory must fail even when forced
 # to protect the history!
 #
+# $1: The git command to be eval'd and tested. The submodule being operated on
+# will be available as $arg.
+#
+# $2: The function that will run before the git command. It will be passed the
+# submodule being operated on as the only argument. This argument is optional.
+#
+# $3: The function that will run after $1. It will be passed the submodule
+# being operated on as the only argument. This argument is optional. It will
+# not be run when testing a case where the git command is expected to fail.
 
-# Internal function; use test_submodule_switch() or
-# test_submodule_forced_switch() instead.
-test_submodule_switch_common() {
-	command="$1"
+# Internal function; use test_submodule_switch_func(), test_submodule_switch(),
+# or test_submodule_forced_switch() instead.
+test_submodule_switch_common () {
+	command="$1" before="${2:-true}" after="${3:-true}"
+
 	######################### Appearing submodule #########################
 	# Switching to a commit letting a submodule appear creates empty dir ...
 	if test "$KNOWN_FAILURE_STASH_DOES_IGNORE_SUBMODULE_CHANGES" = 1
@@ -326,7 +336,10 @@ test_submodule_switch_common() {
 		(
 			cd submodule_update &&
 			git branch -t add_sub1 origin/add_sub1 &&
-			$command add_sub1 &&
+			arg=add_sub1 &&
+			$before "$arg" &&
+			eval $command &&
+			$after "$arg" &&
 			test_superproject_content origin/add_sub1 &&
 			test_dir_is_empty sub1 &&
 			git submodule update --init --recursive &&
@@ -341,7 +354,10 @@ test_submodule_switch_common() {
 			cd submodule_update &&
 			mkdir sub1 &&
 			git branch -t add_sub1 origin/add_sub1 &&
-			$command add_sub1 &&
+			arg=add_sub1 &&
+			$before "$arg" &&
+			eval $command &&
+			$after "$arg" &&
 			test_superproject_content origin/add_sub1 &&
 			test_dir_is_empty sub1 &&
 			git submodule update --init --recursive &&
@@ -356,7 +372,10 @@ test_submodule_switch_common() {
 		(
 			cd submodule_update &&
 			git branch -t replace_file_with_sub1 origin/replace_file_with_sub1 &&
-			$command replace_file_with_sub1 &&
+			arg=replace_file_with_sub1 &&
+			$before "$arg" &&
+			eval $command &&
+			$after "$arg" &&
 			test_superproject_content origin/replace_file_with_sub1 &&
 			test_dir_is_empty sub1 &&
 			git submodule update --init --recursive &&
@@ -380,7 +399,10 @@ test_submodule_switch_common() {
 		(
 			cd submodule_update &&
 			git branch -t replace_directory_with_sub1 origin/replace_directory_with_sub1 &&
-			$command replace_directory_with_sub1 &&
+			arg=replace_directory_with_sub1  &&
+			$before "$arg" &&
+			eval $command &&
+			$after "$arg" &&
 			test_superproject_content origin/replace_directory_with_sub1 &&
 			test_dir_is_empty sub1 &&
 			git submodule update --init --recursive &&
@@ -402,7 +424,10 @@ test_submodule_switch_common() {
 		(
 			cd submodule_update &&
 			git branch -t remove_sub1 origin/remove_sub1 &&
-			$command remove_sub1 &&
+			arg=remove_sub1 &&
+			$before "$arg" &&
+			eval $command &&
+			$after "$arg" &&
 			test_superproject_content origin/remove_sub1 &&
 			test_submodule_content sub1 origin/add_sub1
 		)
@@ -415,7 +440,10 @@ test_submodule_switch_common() {
 			cd submodule_update &&
 			git branch -t remove_sub1 origin/remove_sub1 &&
 			replace_gitfile_with_git_dir sub1 &&
-			$command remove_sub1 &&
+			arg=remove_sub1 &&
+			$before "$arg" &&
+			eval $command &&
+			$after "$arg" &&
 			test_superproject_content origin/remove_sub1 &&
 			test_git_directory_is_unchanged sub1 &&
 			test_submodule_content sub1 origin/add_sub1
@@ -443,7 +471,9 @@ test_submodule_switch_common() {
 		(
 			cd submodule_update &&
 			git branch -t replace_sub1_with_directory origin/replace_sub1_with_directory &&
-			test_must_fail $command replace_sub1_with_directory &&
+			arg=replace_sub1_with_directory &&
+			$before "$arg" &&
+			eval test_must_fail $command &&
 			test_superproject_content origin/add_sub1 &&
 			test_submodule_content sub1 origin/add_sub1
 		)
@@ -456,7 +486,9 @@ test_submodule_switch_common() {
 			cd submodule_update &&
 			git branch -t replace_sub1_with_directory origin/replace_sub1_with_directory &&
 			replace_gitfile_with_git_dir sub1 &&
-			test_must_fail $command replace_sub1_with_directory &&
+			arg=replace_sub1_with_directory &&
+			$before "$arg" &&
+			eval test_must_fail $command &&
 			test_superproject_content origin/add_sub1 &&
 			test_git_directory_is_unchanged sub1 &&
 			test_submodule_content sub1 origin/add_sub1
@@ -470,7 +502,9 @@ test_submodule_switch_common() {
 		(
 			cd submodule_update &&
 			git branch -t replace_sub1_with_file origin/replace_sub1_with_file &&
-			test_must_fail $command replace_sub1_with_file &&
+			arg=replace_sub1_with_file &&
+			$before "$arg" &&
+			eval test_must_fail $command &&
 			test_superproject_content origin/add_sub1 &&
 			test_submodule_content sub1 origin/add_sub1
 		)
@@ -484,7 +518,9 @@ test_submodule_switch_common() {
 			cd submodule_update &&
 			git branch -t replace_sub1_with_file origin/replace_sub1_with_file &&
 			replace_gitfile_with_git_dir sub1 &&
-			test_must_fail $command replace_sub1_with_file &&
+			arg=replace_sub1_with_file &&
+			$before "$arg" &&
+			eval test_must_fail $command &&
 			test_superproject_content origin/add_sub1 &&
 			test_git_directory_is_unchanged sub1 &&
 			test_submodule_content sub1 origin/add_sub1
@@ -508,7 +544,10 @@ test_submodule_switch_common() {
 		(
 			cd submodule_update &&
 			git branch -t modify_sub1 origin/modify_sub1 &&
-			$command modify_sub1 &&
+			arg=modify_sub1 &&
+			$before "$arg" &&
+			eval $command &&
+			$after "$arg" &&
 			test_superproject_content origin/modify_sub1 &&
 			test_submodule_content sub1 origin/add_sub1 &&
 			git submodule update &&
@@ -523,7 +562,10 @@ test_submodule_switch_common() {
 		(
 			cd submodule_update &&
 			git branch -t invalid_sub1 origin/invalid_sub1 &&
-			$command invalid_sub1 &&
+			arg=invalid_sub1 &&
+			$before "$arg" &&
+			eval $command &&
+			$after "$arg" &&
 			test_superproject_content origin/invalid_sub1 &&
 			test_submodule_content sub1 origin/add_sub1 &&
 			test_must_fail git submodule update &&
@@ -538,7 +580,10 @@ test_submodule_switch_common() {
 		(
 			cd submodule_update &&
 			git branch -t valid_sub1 origin/valid_sub1 &&
-			$command valid_sub1 &&
+			arg=valid_sub1 &&
+			$before "$arg" &&
+			eval $command &&
+			$after "$arg" &&
 			test_superproject_content origin/valid_sub1 &&
 			test_dir_is_empty sub1 &&
 			git submodule update --init --recursive &&
@@ -559,17 +604,34 @@ test_submodule_switch_common() {
 # conditions, set the appropriate KNOWN_FAILURE_* variable used in the tests
 # below to 1.
 #
-# Use as follows:
+# $1: The git command to be eval'd and tested. The submodule being operated on
+# will be available as $arg. Do not include the leading "git".
 #
-# my_func () {
+# $2: The function that will run before the git command. It will be passed the
+# submodule being operated on as the only argument. This argument is optional.
+#
+# $3: The function that will run after $1. It will be passed the submodule
+# being operated on as the only argument. This argument is optional. It will
+# not be run when testing a case where the git command is expected to fail.
+#
+# The following example uses `git some-command` as an example command to be
+# tested. It updates the worktree and index to match a target, but not any
+# submodule directories.
+#
+# my_func_before () {
 #   target=$1
-#   # Do something here that updates the worktree and index to match target,
-#   # but not any submodule directories.
+#   # Prepare for git some-command to be run
 # }
-# test_submodule_switch "my_func"
-test_submodule_switch () {
-	command="$1"
-	test_submodule_switch_common "$command"
+# my_func_after () {
+#   target=$1
+#   # Check the state after git some-command is run
+# }
+# test_submodule_switch_func "some-command \$arg" "my_func_before" "my_func_after"
+test_submodule_switch_func () {
+	command="git $1"
+	before="$2"
+	after="$3"
+	test_submodule_switch_common "$command" "$before" "$after"
 
 	# An empty directory does not prevent the creation of a submodule of
 	# the same name, but a file does.
@@ -580,17 +642,23 @@ test_submodule_switch () {
 			cd submodule_update &&
 			git branch -t add_sub1 origin/add_sub1 &&
 			>sub1 &&
-			test_must_fail $command add_sub1 &&
+			arg=add_sub1 &&
+			$before "$arg" &&
+			eval test_must_fail $command &&
 			test_superproject_content origin/no_submodule &&
 			test_must_be_empty sub1
 		)
 	'
 }
 
+test_submodule_switch () {
+	test_submodule_switch_func "$1 \$arg"
+}
+
 # Same as test_submodule_switch(), except that throwing away local changes in
 # the superproject is allowed.
 test_submodule_forced_switch () {
-	command="$1"
+	command="git $1 \$arg"
 	KNOWN_FAILURE_FORCED_SWITCH_TESTS=1
 	test_submodule_switch_common "$command"
 
@@ -603,7 +671,8 @@ test_submodule_forced_switch () {
 			cd submodule_update &&
 			git branch -t add_sub1 origin/add_sub1 &&
 			>sub1 &&
-			$command add_sub1 &&
+			arg=add_sub1 &&
+			eval $command &&
 			test_superproject_content origin/add_sub1 &&
 			test_dir_is_empty sub1
 		)
@@ -631,8 +700,8 @@ test_submodule_forced_switch () {
 
 # Internal function; use test_submodule_switch_recursing_with_args() or
 # test_submodule_forced_switch_recursing_with_args() instead.
-test_submodule_recursing_with_args_common() {
-	command="$1"
+test_submodule_recursing_with_args_common () {
+	command="$1 --recurse-submodules"
 
 	######################### Appearing submodule #########################
 	# Switching to a commit letting a submodule appear checks it out ...
@@ -840,7 +909,7 @@ test_submodule_recursing_with_args_common() {
 # test_submodule_switch_recursing_with_args "$GIT_COMMAND"
 test_submodule_switch_recursing_with_args () {
 	cmd_args="$1"
-	command="git $cmd_args --recurse-submodules"
+	command="git $cmd_args"
 	test_submodule_recursing_with_args_common "$command"
 
 	RESULTDS=success
@@ -957,7 +1026,7 @@ test_submodule_switch_recursing_with_args () {
 # away local changes in the superproject is allowed.
 test_submodule_forced_switch_recursing_with_args () {
 	cmd_args="$1"
-	command="git $cmd_args --recurse-submodules"
+	command="git $cmd_args"
 	test_submodule_recursing_with_args_common "$command"
 
 	RESULT=success

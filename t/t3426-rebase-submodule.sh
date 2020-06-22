@@ -16,11 +16,10 @@ git_rebase () {
 	git revert HEAD &&
 	git status -su >actual &&
 	ls -1pR * >>actual &&
-	test_cmp expect actual &&
-	git rebase "$1"
+	test_cmp expect actual
 }
 
-test_submodule_switch "git_rebase"
+test_submodule_switch_func "rebase \$arg" "git_rebase"
 
 git_rebase_interactive () {
 	git status -su >expect &&
@@ -34,11 +33,10 @@ git_rebase_interactive () {
 	ls -1pR * >>actual &&
 	test_cmp expect actual &&
 	set_fake_editor &&
-	echo "fake-editor.sh" >.git/info/exclude &&
-	git rebase -i "$1"
+	echo "fake-editor.sh" >.git/info/exclude
 }
 
-test_submodule_switch "git_rebase_interactive"
+test_submodule_switch_func "rebase -i \$arg" "git_rebase_interactive"
 
 test_expect_success 'rebase interactive ignores modified submodules' '
 	test_when_finished "rm -rf super sub" &&

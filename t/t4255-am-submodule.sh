@@ -5,18 +5,14 @@ test_description='git am handling submodules'
 . ./test-lib.sh
 . "$TEST_DIRECTORY"/lib-submodule-update.sh
 
-am () {
-	git format-patch --stdout --ignore-submodules=dirty "..$1" | git am -
+create_patch () {
+	git format-patch --stdout --ignore-submodules=dirty "..$1" >patch
 }
 
-test_submodule_switch "am"
-
-am_3way () {
-	git format-patch --stdout --ignore-submodules=dirty "..$1" | git am --3way -
-}
+test_submodule_switch_func "am patch" "create_patch"
 
 KNOWN_FAILURE_NOFF_MERGE_ATTEMPTS_TO_MERGE_REMOVED_SUBMODULE_FILES=1
-test_submodule_switch "am_3way"
+test_submodule_switch_func "am --3way patch" "create_patch"
 
 test_expect_success 'setup diff.submodule' '
 	test_commit one &&

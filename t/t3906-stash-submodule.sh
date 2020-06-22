@@ -5,10 +5,12 @@ test_description='stash can handle submodules'
 . ./test-lib.sh
 . "$TEST_DIRECTORY"/lib-submodule-update.sh
 
-git_stash () {
+git_stash_before () {
 	git status -su >expect &&
-	ls -1pR * >>expect &&
-	git read-tree -u -m "$1" &&
+	ls -1pR * >>expect
+}
+
+git_stash_after () {
 	git stash &&
 	git status -su >actual &&
 	ls -1pR * >>actual &&
@@ -19,7 +21,7 @@ git_stash () {
 KNOWN_FAILURE_STASH_DOES_IGNORE_SUBMODULE_CHANGES=1
 KNOWN_FAILURE_CHERRY_PICK_SEES_EMPTY_COMMIT=1
 KNOWN_FAILURE_NOFF_MERGE_DOESNT_CREATE_EMPTY_SUBMODULE_DIR=1
-test_submodule_switch "git_stash"
+test_submodule_switch_func "read-tree -u -m \$arg" "git_stash_before" "git_stash_after"
 
 setup_basic () {
 	test_when_finished "rm -rf main sub" &&

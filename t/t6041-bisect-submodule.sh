@@ -5,12 +5,14 @@ test_description='bisect can handle submodules'
 . ./test-lib.sh
 . "$TEST_DIRECTORY"/lib-submodule-update.sh
 
-git_bisect () {
+git_bisect_before () {
 	git status -su >expect &&
 	ls -1pR * >>expect &&
 	tar cf "$TRASH_DIRECTORY/tmp.tar" * &&
-	GOOD=$(git rev-parse --verify HEAD) &&
-	git checkout "$1" &&
+	GOOD=$(git rev-parse --verify HEAD)
+}
+
+git_bisect_after () {
 	echo "foo" >bar &&
 	git add bar &&
 	git commit -m "bisect bad" &&
@@ -27,6 +29,6 @@ git_bisect () {
 	git bisect bad $BAD
 }
 
-test_submodule_switch "git_bisect"
+test_submodule_switch_func "checkout \$arg" "git_bisect_before" "git_bisect_after"
 
 test_done
