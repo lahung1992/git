@@ -1980,8 +1980,14 @@ static const char *remote_submodule_branch(const char *path)
 		branch = sub->branch;
 	free(key);
 
-	if (!branch)
-		return "master";
+	if (!branch) {
+		static char *default_branch;
+
+		if (!default_branch)
+			default_branch = git_default_branch_name(1);
+
+		return default_branch;
+	}
 
 	if (!strcmp(branch, ".")) {
 		const char *refname = resolve_ref_unsafe("HEAD", 0, NULL, NULL);

@@ -13,7 +13,7 @@
 static const char *url;
 static int dump_from_file;
 static const char *private_ref;
-static const char *remote_ref = "refs/heads/master";
+static char *remote_ref;
 static const char *marksfilename, *notes_ref;
 struct rev_note { unsigned int rev_nr; };
 
@@ -286,13 +286,17 @@ int cmd_main(int argc, const char **argv)
 			private_ref_sb = STRBUF_INIT, marksfilename_sb = STRBUF_INIT,
 			notes_ref_sb = STRBUF_INIT;
 	static struct remote *remote;
-	const char *url_in;
+	const char *url_in, *default_branch;
 
 	setup_git_directory();
 	if (argc < 2 || argc > 3) {
 		usage("git-remote-svn <remote-name> [<url>]");
 		return 1;
 	}
+
+	remote_ref = git_default_branch_name(0);
+	if (!skip_prefix(remote_ref, "refs/heads/", &default_branch))
+		BUG("unexpected remote_ref '%s'", remote_ref);
 
 	remote = remote_get(argv[1]);
 	url_in = (argc == 3) ? argv[2] : remote->url[0];
@@ -306,7 +310,8 @@ int cmd_main(int argc, const char **argv)
 		url = url_sb.buf;
 	}
 
-	strbuf_addf(&private_ref_sb, "refs/svn/%s/master", remote->name);
+	strbuf_addf(&private_ref_sb, "refs/svn/%s/%s",
+		    remote->name, default_branch);
 	private_ref = private_ref_sb.buf;
 
 	strbuf_addf(&notes_ref_sb, "refs/notes/%s/revs", remote->name);

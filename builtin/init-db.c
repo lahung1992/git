@@ -258,15 +258,17 @@ static int create_default_files(const char *template_path,
 		die("failed to set up refs db: %s", err.buf);
 
 	/*
-	 * Create the default symlink from ".git/HEAD" to the "master"
-	 * branch, if it does not exist yet.
+	 * Create the default symlink from ".git/HEAD" to the default
+	 * branch name, if it does not exist yet.
 	 */
 	path = git_path_buf(&buf, "HEAD");
 	reinit = (!access(path, R_OK)
 		  || readlink(path, junk, sizeof(junk)-1) != -1);
 	if (!reinit) {
-		if (create_symref("HEAD", "refs/heads/master", NULL) < 0)
+		char *default_ref = git_default_branch_name(0);
+		if (create_symref("HEAD", default_ref, NULL) < 0)
 			exit(1);
+		free(default_ref);
 	}
 
 	initialize_repository_version(fmt->hash_algo);

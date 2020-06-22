@@ -626,3 +626,7 @@ core.abbrev::
 	in your repository, which hopefully is enough for
 	abbreviated object names to stay unique for some time.
 	The minimum length is 4.
+
+core.defaultBranchName::
+	Allows overriding the default branch name e.g. when initializing
+	a new repository or when cloning an empty repository.

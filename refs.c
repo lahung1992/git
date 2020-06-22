@@ -562,6 +562,40 @@ void expand_ref_prefix(struct argv_array *prefixes, const char *prefix)
 		argv_array_pushf(prefixes, *p, len, prefix);
 }
 
+char *git_default_branch_name(int short_name)
+{
+	const char *branch_name = getenv("GIT_TEST_DEFAULT_BRANCH_NAME");
+	char *from_config = NULL, *prefixed;
+
+	/*
+	 * If the default branch name was not specified via the environment
+	 * variable GIT_TEST_DEFAULT_BRANCH_NAME, retrieve it from the config
+	 * setting core.defaultBranchName. If neither are set, fall back to the
+	 * hard-coded default.
+	 */
+	if (!branch_name || !*branch_name) {
+		if (git_config_get_string("core.defaultbranchname",
+					  &from_config) < 0)
+			die(_("Could not retrieve `core.defaultBranchName`"));
+
+		if (from_config)
+			branch_name = from_config;
+		else
+			branch_name = "master";
+	}
+
+	if (short_name)
+		return from_config ? from_config : xstrdup(branch_name);
+
+	/* prepend "refs/heads/" to the branch name */
+	prefixed = xstrfmt("refs/heads/%s", branch_name);
+	if (check_refname_format(prefixed, 0))
+		die(_("invalid default branch name: '%s'"), branch_name);
+
+	free(from_config);
+	return prefixed;
+}
+
 /*
  * *string and *len will only be substituted, and *string returned (for
  * later free()ing) if the string passed in is a magic short-hand form

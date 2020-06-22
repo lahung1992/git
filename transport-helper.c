@@ -1099,9 +1099,13 @@ static int push_refs(struct transport *transport,
 	}
 
 	if (!remote_refs) {
+		char *branch_name = git_default_branch_name(1);
+
 		fprintf(stderr,
 			_("No refs in common and none specified; doing nothing.\n"
-			  "Perhaps you should specify a branch such as 'master'.\n"));
+			  "Perhaps you should specify a branch such as '%s'.\n"),
+			branch_name);
+		free(branch_name);
 		return 0;
 	}
 

@@ -155,6 +155,12 @@ int dwim_ref(const char *str, int len, struct object_id *oid, char **ref);
 int dwim_log(const char *str, int len, struct object_id *oid, char **ref);
 
 /*
+ * Retrieves the name of the default branch. If `short_name` is non-zero, the
+ * branch name will be prefixed with "refs/heads/".
+ */
+char *git_default_branch_name(int short_name);
+
+/*
  * A ref_transaction represents a collection of reference updates that
  * should succeed or fail together.
  *

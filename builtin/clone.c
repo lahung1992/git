@@ -1275,9 +1275,17 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 		remote_head_points_at = NULL;
 		remote_head = NULL;
 		option_no_checkout = 1;
-		if (!option_bare)
-			install_branch_config(0, "master", option_origin,
-					      "refs/heads/master");
+		if (!option_bare) {
+			char *default_branch = git_default_branch_name(0);
+			const char *nick;
+
+			if (!skip_prefix(default_branch, "refs/heads/", &nick))
+				BUG("unexpected default branch '%s'",
+				    default_branch);
+			install_branch_config(0, nick, option_origin,
+					      default_branch);
+			free(default_branch);
+		}
 	}
 
 	write_refspec_config(src_ref_prefix, our_head_points_at,
