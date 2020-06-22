@@ -26,11 +26,8 @@ test_expect_success 'stream omits path names' '
 	! grep xyzzy stream
 '
 
-test_expect_success 'stream allows master as refname' '
-	grep master stream
-'
-
-test_expect_success 'stream omits other refnames' '
+test_expect_success 'stream omits refnames' '
+	! grep master stream &&
 	! grep other stream &&
 	! grep mytag stream
 '
@@ -46,6 +43,24 @@ test_expect_success 'stream omits tag message' '
 	! grep "annotated tag" stream
 '
 
+test_expect_success 'refname mapping can be dumped' '
+	git fast-export --anonymize --all \
+		--dump-anonymized-refnames=refs.out >/dev/null &&
+	# we make no guarantees of the exact anonymized names,
+	# so just check that we have the right number and
+	# that a sample line looks sane.
+	test_line_count = 7 refs.out &&
+	grep "^refs/heads/other refs/heads/" refs.out
+'
+
+test_expect_success 'path mapping can be dumped' '
+	git fast-export --anonymize --all \
+		--dump-anonymized-paths=paths.out >/dev/null &&
+	# do not assume a particular anonymization scheme or order;
+	# just sanity check that a sample line looks sensible.
+	grep "^foo " paths.out
+'
+
 # NOTE: we chdir to the new, anonymized repository
 # after this. All further tests should assume this.
 test_expect_success 'import stream to new repository' '
@@ -57,7 +72,8 @@ test_expect_success 'import stream to new repository' '
 test_expect_success 'result has two branches' '
 	git for-each-ref --format="%(refname)" refs/heads >branches &&
 	test_line_count = 2 branches &&
-	other_branch=$(grep -v refs/heads/master branches)
+	main_branch=$(sed -ne "s,refs/heads/master ,,p" ../refs.out) &&
+	other_branch=$(sed -ne "s,refs/heads/other ,,p" ../refs.out)
 '
 
 test_expect_success 'repo has original shape and timestamps' '
@@ -65,7 +81,7 @@ test_expect_success 'repo has original shape and timestamps' '
 		git log --format="%m %ct" --left-right --boundary "$@"
 	} &&
 	(cd .. && shape master...other) >expect &&
-	shape master...$other_branch >actual &&
+	shape $main_branch...$other_branch >actual &&
 	test_cmp expect actual
 '
 
