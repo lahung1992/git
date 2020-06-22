@@ -126,7 +126,7 @@ test_expect_success 'setup - add commit-graph to the chain without Bloom filters
 	test_commit c14 A/anotherFile2 &&
 	test_commit c15 A/B/anotherFile2 &&
 	test_commit c16 A/B/C/anotherFile2 &&
-	GIT_TEST_COMMIT_GRAPH_CHANGED_PATHS=0 git commit-graph write --reachable --split &&
+	git commit-graph write --reachable --split --no-changed-paths &&
 	test_line_count = 2 .git/objects/info/commit-graphs/commit-graph-chain
 '
 
@@ -142,7 +142,7 @@ test_expect_success 'setup - add commit-graph to the chain with Bloom filters' '
 
 test_bloom_filters_used_when_some_filters_are_missing () {
 	log_args=$1
-	bloom_trace_prefix="statistics:{\"filter_not_present\":3,\"zero_length_filter\":0,\"maybe\":8,\"definitely_not\":6"
+	bloom_trace_prefix="statistics:{\"filter_not_present\":3,\"zero_length_filter\":0,\"maybe\":6,\"definitely_not\":8"
 	setup "$log_args" &&
 	grep -q "$bloom_trace_prefix" "$TRASH_DIRECTORY/trace.perf" &&
 	test_cmp log_wo_bloom log_w_bloom

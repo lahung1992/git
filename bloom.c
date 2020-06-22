@@ -259,6 +259,10 @@ struct bloom_filter *get_bloom_filter(struct repository *r,
 		}
 
 		filter->len = (hashmap_get_size(&pathmap) * settings.bits_per_entry + BITS_PER_WORD - 1) / BITS_PER_WORD;
+
+		if (filter->len && filter->len < 8)
+			filter->len = 8;
+
 		filter->data = xcalloc(filter->len, sizeof(unsigned char));
 
 		hashmap_for_each_entry(&pathmap, &iter, e, entry) {
