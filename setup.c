@@ -666,7 +666,9 @@ int verify_repository_format(const struct repository_format *format,
 	if (format->version >= 1 && format->unknown_extensions.nr) {
 		int i;
 
-		strbuf_addstr(err, _("unknown repository extensions found:"));
+		strbuf_addstr(err, Q_("unknown repository extension found:",
+				      "unknown repository extensions found:",
+				      format->unknown_extensions.nr));
 
 		for (i = 0; i < format->unknown_extensions.nr; i++)
 			strbuf_addf(err, "\n\t%s",
@@ -678,7 +680,9 @@ int verify_repository_format(const struct repository_format *format,
 		int i;
 
 		strbuf_addstr(err,
-			      _("repo version is 0, but v1-only extensions found:"));
+			      Q_("repo version is 0, but v1-only extension found:",
+				 "repo version is 0, but v1-only extensions found:",
+				 format->v1_only_extensions.nr));
 
 		for (i = 0; i < format->v1_only_extensions.nr; i++)
 			strbuf_addf(err, "\n\t%s",
@@ -1274,18 +1278,10 @@ const char *setup_git_directory_gently(int *nongit_ok)
 	 * the GIT_PREFIX environment variable must always match. For details
 	 * see Documentation/config/alias.txt.
 	 */
-	if (nongit_ok && *nongit_ok) {
+	if (nongit_ok && *nongit_ok)
 		startup_info->have_repository = 0;
-		startup_info->prefix = NULL;
-		setenv(GIT_PREFIX_ENVIRONMENT, "", 1);
-	} else {
+	else
 		startup_info->have_repository = 1;
-		startup_info->prefix = prefix;
-		if (prefix)
-			setenv(GIT_PREFIX_ENVIRONMENT, prefix, 1);
-		else
-			setenv(GIT_PREFIX_ENVIRONMENT, "", 1);
-	}
 
 	/*
 	 * Not all paths through the setup code will call 'set_git_dir()' (which
@@ -1311,6 +1307,22 @@ const char *setup_git_directory_gently(int *nongit_ok)
 		if (startup_info->have_repository)
 			repo_set_hash_algo(the_repository, repo_fmt.hash_algo);
 	}
+	/*
+	 * Since precompose_string_if_needed() needs to look at
+	 * the core.precomposeunicode configuration, this
+	 * has to happen after the above block that finds
+	 * out where the repository is, i.e. a preparation
+	 * for calling git_config_get_bool().
+	 */
+	if (prefix) {
+		prefix = precompose_string_if_needed(prefix);
+		startup_info->prefix = prefix;
+		setenv(GIT_PREFIX_ENVIRONMENT, prefix, 1);
+	} else {
+		startup_info->prefix = NULL;
+		setenv(GIT_PREFIX_ENVIRONMENT, "", 1);
+	}
+
 
 	strbuf_release(&dir);
 	strbuf_release(&gitdir);

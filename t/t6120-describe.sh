@@ -11,6 +11,9 @@ test_description='test describe'
 #
 # First parent of a merge commit is on the same line, second parent below.
 
+GIT_TEST_DEFAULT_INITIAL_BRANCH_NAME=main
+export GIT_TEST_DEFAULT_INITIAL_BRANCH_NAME
+
 . ./test-lib.sh
 
 check_describe () {
@@ -28,64 +31,32 @@ check_describe () {
 }
 
 test_expect_success setup '
+	test_commit initial file one &&
+	test_commit second file two &&
+	test_commit third file three &&
+	test_commit --annotate A file A &&
+	test_commit c file c &&
 
-	test_tick &&
-	echo one >file && git add file && git commit -m initial &&
-	one=$(git rev-parse HEAD) &&
-
-	git describe --always HEAD &&
-
-	test_tick &&
-	echo two >file && git add file && git commit -m second &&
-	two=$(git rev-parse HEAD) &&
-
-	test_tick &&
-	echo three >file && git add file && git commit -m third &&
-
-	test_tick &&
-	echo A >file && git add file && git commit -m A &&
-	test_tick &&
-	git tag -a -m A A &&
-
-	test_tick &&
-	echo c >file && git add file && git commit -m c &&
-	test_tick &&
-	git tag c &&
-
-	git reset --hard $two &&
-	test_tick &&
-	echo B >side && git add side && git commit -m B &&
-	test_tick &&
-	git tag -a -m B B &&
+	git reset --hard second &&
+	test_commit --annotate B side B &&
 
 	test_tick &&
 	git merge -m Merged c &&
 	merged=$(git rev-parse HEAD) &&
 
-	git reset --hard $two &&
-	test_tick &&
-	echo D >another && git add another && git commit -m D &&
-	test_tick &&
-	git tag -a -m D D &&
+	git reset --hard second &&
+	test_commit --no-tag D another D &&
+
 	test_tick &&
 	git tag -a -m R R &&
 
-	test_tick &&
-	echo DD >another && git commit -a -m another &&
-
-	test_tick &&
-	git tag e &&
-
-	test_tick &&
-	echo DDD >another && git commit -a -m "yet another" &&
+	test_commit e another DD &&
+	test_commit --no-tag "yet another" another DDD &&
 
 	test_tick &&
 	git merge -m Merged $merged &&
 
-	test_tick &&
-	echo X >file && echo X >side && git add file side &&
-	git commit -m x
-
+	test_commit --no-tag x file
 '
 
 check_describe A-* HEAD
@@ -102,7 +73,7 @@ check_describe c-* --tags HEAD^^2
 check_describe B --tags HEAD^^2^
 check_describe e --tags HEAD^^^
 
-check_describe heads/master --all HEAD
+check_describe heads/main --all HEAD
 check_describe tags/c-* --all HEAD^
 check_describe tags/e --all HEAD^^^
 
@@ -133,7 +104,7 @@ warning: tag 'Q' is externally known as 'A'
 EOF
 check_describe A-* HEAD
 test_expect_success 'warning was displayed for Q' '
-	test_i18ncmp err.expect err.actual
+	test_cmp err.expect err.actual
 '
 test_expect_success 'misnamed annotated tag forces long output' '
 	description=$(git describe --no-long Q^0) &&
@@ -403,15 +374,15 @@ test_expect_success ULIMIT_STACK_SIZE 'name-rev works in a deep repo' '
 	i=1 &&
 	while test $i -lt 8000
 	do
-		echo "commit refs/heads/master
+		echo "commit refs/heads/main
 committer A U Thor <author@example.com> $((1000000000 + $i * 100)) +0200
 data <<EOF
 commit #$i
 EOF"
-		test $i = 1 && echo "from refs/heads/master^0"
+		test $i = 1 && echo "from refs/heads/main^0"
 		i=$(($i + 1))
 	done | git fast-import &&
-	git checkout master &&
+	git checkout main &&
 	git tag far-far-away HEAD^ &&
 	echo "HEAD~4000 tags/far-far-away~3999" >expect &&
 	git name-rev HEAD~4000 >actual &&
@@ -442,7 +413,7 @@ test_expect_success 'describe complains about missing object' '
 '
 
 test_expect_success 'name-rev a rev shortly after epoch' '
-	test_when_finished "git checkout master" &&
+	test_when_finished "git checkout main" &&
 
 	git checkout --orphan no-timestamp-underflow &&
 	# Any date closer to epoch than the CUTOFF_DATE_SLOP constant
@@ -456,7 +427,7 @@ test_expect_success 'name-rev a rev shortly after epoch' '
 	test_cmp expect actual
 '
 
-# A--------------master
+# A--------------main
 #  \            /
 #   \----------M2
 #    \        /
@@ -487,10 +458,10 @@ test_expect_success 'name-rev covers all conditions while looking at parents' '
 		git checkout $A &&
 		git merge --no-ff HEAD@{1} && # M2
 
-		git checkout master &&
+		git checkout main &&
 		git merge --no-ff HEAD@{1} &&
 
-		echo "$B master^2^2~1^2" >expect &&
+		echo "$B main^2^2~1^2" >expect &&
 		git name-rev $B >actual &&
 
 		test_cmp expect actual
@@ -516,7 +487,7 @@ test_expect_success 'describe commits with disjoint bases' '
 		git checkout --orphan branch && rm file &&
 		echo B > file2 && git add file2 && git commit -m B &&
 		git tag B -a -m B &&
-		git merge --no-ff --allow-unrelated-histories master -m x &&
+		git merge --no-ff --allow-unrelated-histories main -m x &&
 
 		check_describe "A-3-*" HEAD
 	)
@@ -542,7 +513,7 @@ test_expect_success 'describe commits with disjoint bases 2' '
 		echo o >> file2 && git add file2 && GIT_COMMITTER_DATE="2020-01-01 15:01" git commit -m o &&
 		echo B >> file2 && git add file2 && GIT_COMMITTER_DATE="2020-01-01 15:02" git commit -m B &&
 		git tag B -a -m B &&
-		git merge --no-ff --allow-unrelated-histories master -m x &&
+		git merge --no-ff --allow-unrelated-histories main -m x &&
 
 		check_describe "B-3-*" HEAD
 	)
