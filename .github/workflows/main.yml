@@ -128,7 +128,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: download build artifacts
-      uses: actions/download-artifact@v1
+      uses: actions/download-artifact@v4.1.7
       with:
         name: windows-artifacts
         path: ${{github.workspace}}
@@ -136,7 +136,7 @@ jobs:
       shell: bash
       run: tar xf artifacts.tar.gz
     - name: download git-sdk-64-minimal
-      uses: actions/download-artifact@v1
+      uses: actions/download-artifact@v4.1.7
       with:
         name: git-sdk-64-minimal
         path: ${{github.workspace}}/git-sdk-64-minimal/
@@ -232,12 +232,12 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: download git-sdk-64-minimal
-      uses: actions/download-artifact@v1
+      uses: actions/download-artifact@v4.1.7
       with:
         name: git-sdk-64-minimal
         path: ${{github.workspace}}/git-sdk-64-minimal/
     - name: download build artifacts
-      uses: actions/download-artifact@v1
+      uses: actions/download-artifact@v4.1.7
       with:
         name: vs-artifacts
         path: ${{github.workspace}}
